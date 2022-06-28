@@ -51,6 +51,7 @@ public class GrpcEventReader : IEventReader {
         var read = _client.ReadAllAsync(
             Direction.Forwards,
             new Position(eventPosition, eventPosition),
+            resolveLinkTos: true,
             cancellationToken: cancellationToken
         );
 
@@ -80,7 +81,14 @@ public class GrpcEventReader : IEventReader {
             );
 
             BaseOriginalEvent originalEvent;
-
+            var Od_System_Events = new []
+               {"$TenantsCentreCreated",
+                "$TenantsCentreCreated.1",
+                "$TenantCreated",
+                "$TenantCreated.1",
+                "$OpenTypeDefined",
+                "$OpenTypeDefined.1"};
+            
             if (evt.Event.EventType == Predefined.MetadataEventType) {
                 if (Encoding.UTF8.GetString(evt.Event.Data.Span) == StreamDeletedBody) {
                     originalEvent = MapStreamDeleted(
@@ -93,7 +101,7 @@ public class GrpcEventReader : IEventReader {
                     originalEvent = MapMetadata(evt, sequence++, activity);
                 }
             }
-            else if (evt.Event.EventType[0] != '$') {
+            else if (evt.Event.EventType[0] != '$' || Od_System_Events.Contains(evt.Event.EventType)) {
                 originalEvent = Map(evt, sequence++, activity);
             }
             else {
